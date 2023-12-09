@@ -1,8 +1,9 @@
 import { ContestStanding } from "@/app/codeforcequery"
-import { NextApiRequest, NextApiResponse } from "next";
+
+import { NextRequest } from "next/server";
 
 
-export async function POST(req: NextApiRequest, { params }: { params: { id: string } }){
+export async function POST(req: NextRequest, { params }: { params: { id: string } }){
     // extract id from query parameter
     const { id } = params;
     const data = await ContestStanding(id)
