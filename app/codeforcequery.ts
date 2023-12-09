@@ -17,7 +17,8 @@ export const secret = "0ce71e2af1be124c5f1c5d45a3ebef42dcc24a92";
 export async function getRatings(){
     const myDB = client.db("a2sv-education");
     const myColl = myDB.collection("student");
-    const users = await myColl.find({}).toArray();
+    // get sorted in decreasing order of rating and return only 50 element
+    const users = await myColl.find({}).sort({rating: -1}).limit(50).toArray();
     return users;
 
 }
