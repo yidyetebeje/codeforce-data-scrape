@@ -49,6 +49,7 @@ export async function CodeForceUserRating(username: string) {
     return data;
 }
 export async function ContestStanding(contestId: string) {
+    
     const myDB = client.db("a2sv-education");
     const ratedCol = myDB.collection("rated-contest");
     const found = await ratedCol.find({id: parseInt(contestId)}).toArray();
@@ -145,13 +146,14 @@ export async function addUser(){
     const url = "https://sheetdb.io/api/v1/dp5n0b3v5dpky"
     const response = await fetch(url)
     const data = await response.json()
-    const users = data.map((user: any) => {
+    let users = data.map((user: any) => {
         return {
             ...user,
-            rating: 1000,
+            rating: 1500,
         }
     })
-
+    // console.log(users)
+    users = users.filter((user: any)=> user["Codeforces*"] !== "" || user["Full Name*"] !== "")
     const myDB = client.db("a2sv-education");
     const myColl = myDB.collection("student");
     await myColl.insertMany(users)
