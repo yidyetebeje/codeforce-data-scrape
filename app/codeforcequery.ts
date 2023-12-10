@@ -18,7 +18,7 @@ export async function getRatings(){
     const myDB = client.db("a2sv-education");
     const myColl = myDB.collection("student");
     // get sorted in decreasing order of rating and return only 50 element
-    const users = await myColl.find({}).sort({rating: -1}).limit(50).toArray();
+    const users = await myColl.find({}).sort({rating: -1}).toArray();
     return users;
 
 }
