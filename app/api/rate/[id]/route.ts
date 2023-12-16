@@ -1,4 +1,4 @@
-import { ContestStanding } from "@/app/codeforcequery"
+import { ContestStanding, contestInteraction } from "@/app/codeforcequery"
 import next from "next";
 import { revalidatePath } from "next/cache";
 
