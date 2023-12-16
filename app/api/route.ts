@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { ContestStanding, addUser, getRatings } from "../codeforcequery";
+import { ContestStanding, addUser, contestInteraction, getRatings, getUsers } from "../codeforcequery";
  // defaults to force-static
 export async function GET(req: NextRequest){
-    const data = await getRatings()
+    const data = await getRatings();
     return Response.json(data)
 }

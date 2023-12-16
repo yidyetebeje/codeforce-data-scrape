@@ -1,7 +1,7 @@
 import crypto from "crypto"
-import { get } from "http";
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { getNewRatings } from "./codeforceratingsystem";
+import { group } from "console";
 const uri = "mongodb+srv://yidnekachewtebeje:selomemygirl@a2sv-education.bz0d1un.mongodb.net/?retryWrites=true&w=majority";
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri,  {
@@ -49,7 +49,6 @@ export async function CodeForceUserRating(username: string) {
     return data;
 }
 export async function ContestStanding(contestId: string) {
-    
     const myDB = client.db("a2sv-education");
     const ratedCol = myDB.collection("rated-contest");
     const found = await ratedCol.find({id: parseInt(contestId)}).toArray();
@@ -111,7 +110,6 @@ export async function ContestStanding(contestId: string) {
     })
     const myColl = myDB.collection("student");
     const users = await myColl.find({}).toArray();
-
     let prevrating = users.map((user: any)=> {
         return {
             position: contestInteraction.findIndex((interaction: any)=> interaction.cfhandle === user["Codeforces*"]),
@@ -140,9 +138,85 @@ export async function ContestStanding(contestId: string) {
     return newrating 
     // return {contestInteraction};
 }
+export async function contestInteraction(contestId:string){
+    const from = 1;
+    const count = 300;
+    const showUnofficial = false;
+    const base_url = `https://codeforces.com/api/contest.standings?contestId=${contestId}&from=${from}&count=${count}&showUnofficial=${showUnofficial}`;
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const start = 123456;
+    const apiSign = `${start}/contest.standings?apiKey=${apiKey}&contestId=${contestId}&count=${count}&from=${from}&showUnofficial=${showUnofficial}&time=${timestamp}#${secret}`;
+    const apiSig = crypto.createHash('sha512').update(apiSign).digest('hex');
+    const url = `${base_url}&apiKey=${apiKey}&time=${timestamp}&apiSig=${start}${apiSig}`;
+    const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+    });
+    const data = await response.json()
+    let contestInfo = data?.result?.contest;
+    let problems = data?.result?.problems;
+    problems = problems?.map((problem: any) => {
+        return {
+            id: problem.contestId + problem.index,
+            name: problem.name,
+            index: problem.index,
+            points: problem.points,
+            rating: problem.rating,
+            tags: problem.tags,
+        };
+    });
+    contestInfo = {
+        ...contestInfo,
+        problems
+    }
+    const rows = data?.result?.rows;
+    const myDB = client.db("a2sv-education");
+    const myColl = myDB.collection("student");
+    const users = await myColl.find({}).toArray();
+    const contestInteraction = rows.filter(row => users.find(user=> user["Codeforces*"] == row.party.members[0].handle) != undefined).map((row: any)=> {
+        return {
+            contestId: contestInfo.id,
+            group:  users.find((user: any)=> user["Codeforces*"] == row.party.members[0].handle)?.group ?? '',
+            contestName: contestInfo.name,
+            cfhandle: row.party.members[0].handle,
+            rank: row.rank,
+            points: row.points,
+            penalty: row.penalty,
+            incontestSolved: row.problemResults.filter((result:any)=> result.points > 0 ).map((result: any, index: number)=> {
+                return {
+                    problemid: row.party.contestId + String.fromCharCode(65 + index),
+                    problemNo: index,
+                    rejectedAttemptCount: result.rejectedAttemptCount,
+                    points: result.points,
+                    bestTimeSubmission: result.bestTimeSubmission
+                }
+            }),
+        }
+    })
+    const ratingColl = myDB.collection("contest-interaction");
+    await ratingColl.insertMany(contestInteraction)
+    return contestInteraction
+}
 
 
 export async function addUser(){
+    const url = "https://sheetdb.io/api/v1/dp5n0b3v5dpky"
+    const response = await fetch(url)
+    const data = await response.json()
+    const filteredData = data.filter((user: any) => user.group == 51 || user.group == 52 || user.group == 53 || user.group == 54 || user.group == 55 || user.group == 56 || user.group == 57)
+    let users = filteredData.map((user: any) => {
+        return {
+            ...user,
+            rating: 1500,
+        }
+    })
+    users = users.filter((user: any)=> user["Codeforces*"] !== "" || user["Full Name*"] !== "")
+    const myDB = client.db("a2sv-education");
+    const myColl = myDB.collection("student");
+    await myColl.insertMany(users)
+    return users;
+}
+export async function getUsers(){
     const url = "https://sheetdb.io/api/v1/dp5n0b3v5dpky"
     const response = await fetch(url)
     const data = await response.json()
@@ -152,10 +226,17 @@ export async function addUser(){
             rating: 1500,
         }
     })
-    // console.log(users)
     users = users.filter((user: any)=> user["Codeforces*"] !== "" || user["Full Name*"] !== "")
     const myDB = client.db("a2sv-education");
     const myColl = myDB.collection("student");
-    await myColl.insertMany(users)
+    const students = await myColl.find({}).toArray();
+    // update the group field for student
+
+    for(let i = 0; i < students.length; i++){
+        const found = users.find((user: any)=> user["Codeforces*"] === students[i]["Codeforces*"])
+        if(found){
+            await myColl.updateOne({"Codeforces*": students[i]["Codeforces*"]}, {$set: {group: found.group}})
+        }
+    }
     return users;
 }
