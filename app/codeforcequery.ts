@@ -138,10 +138,10 @@ export async function ContestStanding(contestId: string) {
     return newrating 
     // return {contestInteraction};
 }
-export async function contestInteraction(contestId:string){
+export async function contestInteraction(contestId:string, n: number){
     const from = 1;
-    const count = 300;
-    const showUnofficial = false;
+    const count = 600;
+    const showUnofficial = true;
     const base_url = `https://codeforces.com/api/contest.standings?contestId=${contestId}&from=${from}&count=${count}&showUnofficial=${showUnofficial}`;
     const timestamp = Math.round(new Date().getTime() / 1000);
     const start = 123456;
@@ -170,18 +170,30 @@ export async function contestInteraction(contestId:string){
         problems
     }
     const rows = data?.result?.rows;
+    const filteredInConstest = rows.filter(row => row.party.participantType == 'CONTESTANT')
+    const filteredInPractice = rows.filter(row => row.party.participantType == "PRACTICE").map(
+        row => {
+            return {
+                handle: row.party.members[0].handle,
+                upsolved: row.problemResults.filter(problem => problem.points > 0).length,
+            }
+        }
+    )
+
     const myDB = client.db("a2sv-education");
     const myColl = myDB.collection("student");
     const users = await myColl.find({}).toArray();
-    const contestInteraction = rows.filter(row => users.find(user=> user["Codeforces*"] == row.party.members[0].handle) != undefined).map((row: any)=> {
+    const contestInteraction = filteredInConstest.filter(row => users.find(user=> user["Codeforces*"] == row.party.members[0].handle) != undefined).map((row: any)=> {
         return {
             contestId: contestInfo.id,
             group:  users.find((user: any)=> user["Codeforces*"] == row.party.members[0].handle)?.group ?? '',
             contestName: contestInfo.name,
             cfhandle: row.party.members[0].handle,
             rank: row.rank,
+            contest: n,
             points: row.points,
             penalty: row.penalty,
+            totalQuestion: row.problemResults.length,
             incontestSolved: row.problemResults.filter((result:any)=> result.points > 0 ).map((result: any, index: number)=> {
                 return {
                     problemid: row.party.contestId + String.fromCharCode(65 + index),
@@ -191,11 +203,12 @@ export async function contestInteraction(contestId:string){
                     bestTimeSubmission: result.bestTimeSubmission
                 }
             }),
+            upsolved: filteredInPractice.find(r => r.handle == row.party.members[0].handle)?.upsolved ?? 0,
         }
     })
-    const ratingColl = myDB.collection("contest-interaction");
-    await ratingColl.insertMany(contestInteraction)
-    return contestInteraction
+    // const ratingColl = myDB.collection("contest-interaction");
+    // await ratingColl.insertMany(contestInteraction)
+    return rows;
 }
 
 
@@ -220,6 +233,10 @@ export async function resetRating() {
     const myDB = client.db("a2sv-education");
     const myColl = myDB.collection("student");
     await myColl.updateMany({}, { $set: { rating: 1500 } });
+    console.log("mycoll")
+    return {
+        success: "true"
+    };
 }
 export async function getUsers(){
     const url = "https://sheetdb.io/api/v1/dp5n0b3v5dpky"
