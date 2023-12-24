@@ -216,6 +216,11 @@ export async function addUser(){
     await myColl.insertMany(users)
     return users;
 }
+export async function resetRating() {
+    const myDB = client.db("a2sv-education");
+    const myColl = myDB.collection("student");
+    await myColl.updateMany({}, { $set: { rating: 1500 } });
+}
 export async function getUsers(){
     const url = "https://sheetdb.io/api/v1/dp5n0b3v5dpky"
     const response = await fetch(url)
