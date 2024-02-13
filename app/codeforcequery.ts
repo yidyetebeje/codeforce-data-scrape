@@ -2,7 +2,6 @@ import crypto from "crypto"
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { getNewRatings } from "./codeforceratingsystem";
 import { group } from "console";
-const uri = "mongodb+srv://yidnekachewtebeje:selomemygirl@a2sv-education.bz0d1un.mongodb.net/?retryWrites=true&w=majority";
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri,  {
         serverApi: {
